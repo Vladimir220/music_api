@@ -144,10 +144,6 @@ func (s service) UpdateTrack(song, group string, newData Track) (code int) {
 	return
 }
 
-func createService(dao DaoDB[Track], enrch trackEnricher, debugLog *log.Logger) service {
-	return service{dao: dao, enrch: enrch, debugLog: debugLog}
-}
-
 func (s service) ReadInfo(filter Track) (info SongDetail, code int) {
 	res, err := s.dao.Read([]string{"*"}, &filter, 0, 1)
 	if err != nil {
@@ -174,4 +170,8 @@ func (s service) ReadInfo(filter Track) (info SongDetail, code int) {
 
 	code = 200
 	return
+}
+
+func createService(dao DaoDB[Track], enrch trackEnricher, debugLog *log.Logger) service {
+	return service{dao: dao, enrch: enrch, debugLog: debugLog}
 }
