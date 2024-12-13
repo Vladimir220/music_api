@@ -1,0 +1,248 @@
+basePath: /
+definitions:
+  main.Lyrics:
+    properties:
+      Lyrics:
+        type: string
+    type: object
+  main.SongDetail:
+    properties:
+      link:
+        type: string
+      releaseDate:
+        type: string
+      text:
+        type: string
+    type: object
+  main.Track:
+    properties:
+      group_name:
+        type: string
+      link:
+        type: string
+      release_date:
+        type: string
+      song:
+        type: string
+      song_lyrics:
+        type: string
+    type: object
+  main.TrackIdentifier:
+    properties:
+      group_name:
+        type: string
+      song:
+        type: string
+    type: object
+host: localhost:1234
+info:
+  contact: {}
+  title: Music_API
+  version: 0.0.1
+paths:
+  /all/pages:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of all Tracks with optional strict filter for songs,
+        groups, releases, lyrics, and links
+      operationId: get-all-tracks
+      parameters:
+      - description: Start index
+        in: query
+        name: start
+        required: true
+        type: integer
+      - description: End index
+        in: query
+        name: end
+        required: true
+        type: integer
+      - description: Strict filter by song
+        in: query
+        name: song-filter
+        type: string
+      - description: Strict filter by group
+        in: query
+        name: group-filter
+        type: string
+      - description: Strict filter by release
+        in: query
+        name: release-filter
+        type: string
+      - description: Strict filter by lyrics
+        in: query
+        name: lyrics-filter
+        type: string
+      - description: Strict filter by link
+        in: query
+        name: link-filter
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved Track
+          schema:
+            items:
+              $ref: '#/definitions/main.Track'
+            type: array
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Get all Tracks
+  /info:
+    get:
+      consumes:
+      - application/json
+      description: Get Info
+      operationId: get-info
+      parameters:
+      - description: song
+        in: query
+        name: song
+        required: true
+        type: string
+      - description: group
+        in: query
+        name: group
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/main.SongDetail'
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Get Info
+  /track:
+    delete:
+      consumes:
+      - application/json
+      description: Delete Track
+      operationId: delete-track
+      parameters:
+      - description: Delete Track
+        in: body
+        name: delTrack
+        required: true
+        schema:
+          $ref: '#/definitions/main.TrackIdentifier'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      summary: Delete Track
+    patch:
+      consumes:
+      - application/json
+      description: Update Track
+      operationId: update-track
+      parameters:
+      - description: song
+        in: query
+        name: song
+        required: true
+        type: string
+      - description: group
+        in: query
+        name: group
+        required: true
+        type: string
+      - description: new values
+        in: body
+        name: newvalues
+        required: true
+        schema:
+          $ref: '#/definitions/main.Track'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      summary: Update Track
+    post:
+      consumes:
+      - application/json
+      description: Create Track
+      operationId: create-track
+      parameters:
+      - description: new values
+        in: body
+        name: newTrack
+        required: true
+        schema:
+          $ref: '#/definitions/main.TrackIdentifier'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+        "400":
+          description: Bad Request
+        "500":
+          description: Internal Server Error
+      summary: Create Track
+  /track/lyrics/couplets:
+    get:
+      consumes:
+      - application/json
+      description: Get Track Lyrics
+      operationId: get-track-lyrics
+      parameters:
+      - description: song
+        in: query
+        name: song
+        required: true
+        type: string
+      - description: group
+        in: query
+        name: group
+        required: true
+        type: string
+      - description: Start index
+        in: query
+        name: start
+        required: true
+        type: integer
+      - description: End index
+        in: query
+        name: end
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/main.Lyrics'
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "500":
+          description: Internal Server Error
+      summary: Get Track Lyrics
+schemes:
+- http
+swagger: "2.0"
