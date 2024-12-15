@@ -14,7 +14,7 @@ func main() {
 	}
 	defer dao.Close()
 
-	e := createTrackEnricher()
+	e := createTrackEnricherDefault()
 	s := createService(dao, e, debugLog)
 	h := createHandlers(s, infoLog, debugLog)
 	r := createRouter(h, infoLog)

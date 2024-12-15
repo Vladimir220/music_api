@@ -9,7 +9,7 @@ import (
 
 type service struct {
 	dao      DaoDB[Track]
-	enrch    trackEnricher
+	enrch    DaoEnrichment[Track]
 	debugLog *log.Logger
 }
 
@@ -172,6 +172,6 @@ func (s service) ReadInfo(filter Track) (info SongDetail, code int) {
 	return
 }
 
-func createService(dao DaoDB[Track], enrch trackEnricher, debugLog *log.Logger) service {
+func createService(dao DaoDB[Track], enrch DaoEnrichment[Track], debugLog *log.Logger) service {
 	return service{dao: dao, enrch: enrch, debugLog: debugLog}
 }
