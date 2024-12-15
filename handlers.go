@@ -9,9 +9,11 @@ import (
 )
 
 type handlers struct {
-	serv     service
-	infoLog  *log.Logger
-	debugLog *log.Logger
+	daoDB           DaoDB[Track]
+	daoEnrch        DaoEnrichment[Track]
+	srvcConstructor CreateMusicService
+	infoLog         *log.Logger
+	debugLog        *log.Logger
 }
 
 // @Summary Get all Tracks
@@ -32,8 +34,7 @@ type handlers struct {
 // @Failure 500
 // @Router /all/pages [get]
 func (h handlers) getAll(w http.ResponseWriter, r *http.Request) {
-
-	s := h.serv //чтобы не было конкуренции обработчиков за один экземпляр сервера
+	s := h.srvcConstructor(h.daoDB, h.daoEnrch, h.debugLog)
 	w.Header().Set("Content-Type", "application/json")
 
 	h.debugLog.Println("Получение всех записей в заданном диапазоне...")
@@ -131,7 +132,7 @@ func (h handlers) getAll(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /track/lyrics/couplets [get]
 func (h handlers) getTrackLyrics(w http.ResponseWriter, r *http.Request) {
-	s := h.serv //чтобы не было конкуренции обработчиков за один экземпляр сервера
+	s := h.srvcConstructor(h.daoDB, h.daoEnrch, h.debugLog)
 	w.Header().Set("Content-Type", "application/json")
 
 	h.debugLog.Println("Получение куплетов текста песни в заданном диапазоне...")
@@ -215,7 +216,7 @@ func (h handlers) getTrackLyrics(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /track [delete]
 func (h handlers) deleteTrack(w http.ResponseWriter, r *http.Request) {
-	s := h.serv //чтобы не было конкуренции обработчиков за один экземпляр сервера
+	s := h.srvcConstructor(h.daoDB, h.daoEnrch, h.debugLog)
 	w.Header().Set("Content-Type", "application/json")
 
 	h.debugLog.Println("Удаление песни...")
@@ -224,7 +225,7 @@ func (h handlers) deleteTrack(w http.ResponseWriter, r *http.Request) {
 	var body TrackIdentifier
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		s.debugLog.Println("Полученное тело не в JSON")
+		h.debugLog.Println("Полученное тело не в JSON")
 		w.WriteHeader(400)
 		fmt.Fprint(w, "Error 400")
 	}
@@ -258,7 +259,7 @@ func (h handlers) deleteTrack(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /track [PATCH]
 func (h handlers) updateTrack(w http.ResponseWriter, r *http.Request) {
-	s := h.serv //чтобы не было конкуренции обработчиков за один экземпляр сервера
+	s := h.srvcConstructor(h.daoDB, h.daoEnrch, h.debugLog)
 	w.Header().Set("Content-Type", "application/json")
 
 	h.debugLog.Println("Изменение информации о песне...")
@@ -283,7 +284,7 @@ func (h handlers) updateTrack(w http.ResponseWriter, r *http.Request) {
 	var body Track
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		s.debugLog.Println("Полученное тело не в JSON")
+		h.debugLog.Println("Полученное тело не в JSON")
 		w.WriteHeader(400)
 		fmt.Fprint(w, "Error 400")
 	}
@@ -315,7 +316,7 @@ func (h handlers) updateTrack(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /track [post]
 func (h handlers) createTrack(w http.ResponseWriter, r *http.Request) {
-	s := h.serv //чтобы не было конкуренции обработчиков за один экземпляр сервера
+	s := h.srvcConstructor(h.daoDB, h.daoEnrch, h.debugLog)
 	w.Header().Set("Content-Type", "application/json")
 
 	h.debugLog.Println("Добавление новой песни...")
@@ -324,7 +325,7 @@ func (h handlers) createTrack(w http.ResponseWriter, r *http.Request) {
 	var body TrackIdentifier
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
-		s.debugLog.Println("Полученное тело не в JSON")
+		h.debugLog.Println("Полученное тело не в JSON")
 		w.WriteHeader(400)
 		fmt.Fprint(w, "Error 400")
 	}
@@ -358,7 +359,7 @@ func (h handlers) createTrack(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /info [get]
 func (h handlers) getInfo(w http.ResponseWriter, r *http.Request) {
-	s := h.serv //чтобы не было конкуренции обработчиков за один экземпляр сервера
+	s := h.srvcConstructor(h.daoDB, h.daoEnrch, h.debugLog)
 	w.Header().Set("Content-Type", "application/json")
 
 	h.debugLog.Println("Получение информации о песне...")
@@ -388,7 +389,7 @@ func (h handlers) getInfo(w http.ResponseWriter, r *http.Request) {
 
 	infoJSON, err := json.Marshal(res)
 	if err != nil {
-		s.debugLog.Println("Неудачный парсинг в JSON")
+		h.debugLog.Println("Неудачный парсинг в JSON")
 		w.WriteHeader(500)
 		fmt.Fprint(w, "Error 500")
 		return
@@ -404,6 +405,6 @@ func (h handlers) getInfo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func createHandlers(serv service, infoLog *log.Logger, debugLog *log.Logger) handlers {
-	return handlers{serv: serv, infoLog: infoLog, debugLog: debugLog}
+func createHandlers(daoDB DaoDB[Track], daoEnrch DaoEnrichment[Track], srvcConstructor CreateMusicService, infoLog *log.Logger, debugLog *log.Logger) handlers {
+	return handlers{daoDB: daoDB, daoEnrch: daoEnrch, srvcConstructor: srvcConstructor, infoLog: infoLog, debugLog: debugLog}
 }

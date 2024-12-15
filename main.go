@@ -7,16 +7,15 @@ package main
 
 func main() {
 	infoLog, debugLog := InitSystem()
-
-	dao, err := createDaoPostgreSQL[Track]()
+	daoDB, err := createDaoPostgreSQL[Track]()
 	if err != nil {
 		debugLog.Fatal(err)
 	}
-	defer dao.Close()
+	defer daoDB.Close()
 
-	e := createTrackEnricherDefault()
-	s := createService(dao, e, debugLog)
-	h := createHandlers(s, infoLog, debugLog)
+	daoEnrch := createTrackEnricherDefault()
+	h := createHandlers(daoDB, daoEnrch, createService, infoLog, debugLog)
+	//s := createService(dao, e, debugLog)
 	r := createRouter(h, infoLog)
 
 	r.initHandlers()
