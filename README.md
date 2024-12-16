@@ -16,5 +16,5 @@
 
 ### Описание модуля ###
 #### Диаграмма классов для лучшего понимания структуры модуля: ####
-![1](https://github.com/Vladimir220/music_api/blob/v0.0.1/pics/class_diagram.jpg)
+![1](https://github.com/Vladimir220/music_api/blob/main/pics/class_diagram.jpg)
 
