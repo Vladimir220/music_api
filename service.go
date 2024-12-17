@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -10,17 +9,17 @@ import (
 
 type service struct {
 	dao      DaoDB[Track]
-	enrch    DaoEnrichment[Track]
+	enrch    EnrichmentChain[Track]
 	debugLog *log.Logger
 }
 
 func (s service) CreateTrack(song, group string) (code int) {
 	track := Track{Song: song, Group_name: group}
-	var e error
-	track, e = s.enrch.GetEnrichment(track)
-
-	fmt.Println(track)
-	fmt.Println(e)
+	var success bool
+	track, success = s.enrch.Execute(track)
+	if !success {
+		s.debugLog.Println("Обогащение не состоялось")
+	}
 
 	rowsAffected, err := s.dao.Create(track)
 	if err != nil {
@@ -176,6 +175,6 @@ func (s service) ReadInfo(filter Track) (info SongDetail, code int) {
 	return
 }
 
-func createService(dao DaoDB[Track], enrch DaoEnrichment[Track], debugLog *log.Logger) MusicService {
+func createService(dao DaoDB[Track], enrch EnrichmentChain[Track], debugLog *log.Logger) MusicService {
 	return service{dao: dao, enrch: enrch, debugLog: debugLog}
 }

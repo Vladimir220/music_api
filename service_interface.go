@@ -11,4 +11,4 @@ type MusicService interface {
 	ReadInfo(filter Track) (info SongDetail, code int)
 }
 
-type CreateMusicService func(dao DaoDB[Track], enrch DaoEnrichment[Track], debugLog *log.Logger) MusicService
+type CreateMusicService func(dao DaoDB[Track], enrch EnrichmentChain[Track], debugLog *log.Logger) MusicService

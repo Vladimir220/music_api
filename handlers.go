@@ -10,7 +10,7 @@ import (
 
 type handlers struct {
 	daoDB           DaoDB[Track]
-	daoEnrch        DaoEnrichment[Track]
+	daoEnrch        EnrichmentChain[Track]
 	srvcConstructor CreateMusicService
 	infoLog         *log.Logger
 	debugLog        *log.Logger
@@ -405,6 +405,6 @@ func (h handlers) getInfo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func createHandlers(daoDB DaoDB[Track], daoEnrch DaoEnrichment[Track], srvcConstructor CreateMusicService, infoLog *log.Logger, debugLog *log.Logger) handlers {
+func createHandlers(daoDB DaoDB[Track], daoEnrch EnrichmentChain[Track], srvcConstructor CreateMusicService, infoLog *log.Logger, debugLog *log.Logger) handlers {
 	return handlers{daoDB: daoDB, daoEnrch: daoEnrch, srvcConstructor: srvcConstructor, infoLog: infoLog, debugLog: debugLog}
 }
