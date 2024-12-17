@@ -5,6 +5,8 @@
 // @BasePath /
 package main
 
+import "os"
+
 func main() {
 	infoLog, debugLog := InitSystem()
 	daoDB, err := createDaoPostgreSQL[Track]()
@@ -13,9 +15,19 @@ func main() {
 	}
 	defer daoDB.Close()
 
-	daoEnrch := createTrackEnricherDefault()
+	// для проверки подключения токена
+	// в гитхаб для безопасности я не буду выкладывать
+	// файл окружения с токенами
+	// но возможно он будет в файле на Яндекс диске
+	token := os.Getenv("TOKEN_LASTFM")
+	var daoEnrch DaoEnrichment[Track]
+	if token == "" {
+		daoEnrch = createDaoLastFm()
+	} else {
+		daoEnrch = createTrackEnricherDefault()
+	}
+
 	h := createHandlers(daoDB, daoEnrch, createService, infoLog, debugLog)
-	//s := createService(dao, e, debugLog)
 	r := createRouter(h, infoLog)
 
 	r.initHandlers()

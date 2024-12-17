@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -15,8 +16,11 @@ type service struct {
 
 func (s service) CreateTrack(song, group string) (code int) {
 	track := Track{Song: song, Group_name: group}
+	var e error
+	track, e = s.enrch.GetEnrichment(track)
 
-	track = s.enrch.GetEnrichment(track)
+	fmt.Println(track)
+	fmt.Println(e)
 
 	rowsAffected, err := s.dao.Create(track)
 	if err != nil {

@@ -9,9 +9,12 @@ import (
 
 func InitSystem() (infoLog *log.Logger, debugLog *log.Logger) {
 
-	err := godotenv.Load()
+	err := godotenv.Load("conf.env", ".env")
 	if err != nil {
-		panic(err.Error())
+		err = godotenv.Load()
+		if err != nil {
+			panic(err.Error())
+		}
 	}
 
 	infoLogFile, err := os.OpenFile(os.Getenv("log_info_file_path"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
