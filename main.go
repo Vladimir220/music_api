@@ -14,8 +14,11 @@ func main() {
 	defer daoDB.Close()
 
 	enrchDefault := createTrackEnricherDefault()
+	enrchLyricsCom := createDaoLyricsCom()
 	enrchLastFm := createDaoLastFm()
-	enrchLastFm.SetNext(enrchDefault)
+
+	enrchLastFm.SetNext(enrchLyricsCom)
+	enrchLyricsCom.SetNext(enrchDefault)
 
 	h := createHandlers(daoDB, enrchLastFm, createService, infoLog, debugLog)
 	r := createRouter(h, infoLog)

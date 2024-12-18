@@ -5,10 +5,17 @@ type trackEnricherDefault struct {
 }
 
 func (e *trackEnricherDefault) GetEnrichment(t Track) (res Track, err error) {
-	t.Link = "Enrichment has occurred"
-	t.Release_date = "2011-11-11"
-	t.Song_lyrics = "Enrichment has occurred"
 	res = t
+	if res.Link == "" {
+		res.Link = "Enrichment has occurred"
+	}
+	if res.Release_date == "" {
+		res.Release_date = "2011-11-11"
+	}
+	if res.Song_lyrics == "" {
+		res.Song_lyrics = "Enrichment has occurred"
+	}
+
 	return
 }
 
