@@ -1,4 +1,4 @@
-package main
+package models
 
 type Track struct {
 	Song         string `json:"song"`
@@ -13,9 +13,9 @@ type Lyrics struct {
 }
 
 type SongDetail struct {
-	ReleaseDate string `json:"releaseDate"`
-	Text        string `json:"text"`
-	Link        string `json:"link"`
+	ReleaseDate string `json:"releaseDate" redis:"releaseDate"`
+	Text        string `json:"text" redis:"text"`
+	Link        string `json:"link" redis:"link"`
 }
 
 type TrackIdentifier struct {

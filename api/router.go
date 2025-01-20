@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"log"
@@ -8,12 +8,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type router struct {
+type Router struct {
 	h       handlers
 	infoLog *log.Logger
 }
 
-func (r router) initHandlers() {
+func (r Router) InitHandlers() {
 	router := mux.NewRouter()
 	host := os.Getenv("NET_HOST")
 
@@ -39,6 +39,6 @@ func (r router) initHandlers() {
 	http.ListenAndServe(host, nil)
 }
 
-func createRouter(h handlers, infoLog *log.Logger) router {
-	return router{h: h, infoLog: infoLog}
+func CreateRouter(h handlers, infoLog *log.Logger) Router {
+	return Router{h: h, infoLog: infoLog}
 }

@@ -1,16 +1,22 @@
-package main
+package api
 
 import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"music_api/dao/caching"
+	"music_api/dao/db"
+	enrch "music_api/dao/enrichment"
+	"music_api/models"
+
 	"net/http"
 	"strconv"
 )
 
 type handlers struct {
-	daoDB           DaoDB[Track]
-	daoEnrch        EnrichmentChain[Track]
+	daoDB           db.DaoDB[models.Track]
+	daoEnrch        enrch.EnrichmentChain[models.Track]
+	caching         caching.DaoCaching
 	srvcConstructor CreateMusicService
 	infoLog         *log.Logger
 	debugLog        *log.Logger
@@ -34,7 +40,7 @@ type handlers struct {
 // @Failure 500
 // @Router /all/pages [get]
 func (h handlers) getAll(w http.ResponseWriter, r *http.Request) {
-	s := h.srvcConstructor(h.daoDB, h.daoEnrch, h.debugLog)
+	s := h.srvcConstructor(h.daoDB, h.daoEnrch, h.caching, h.debugLog)
 	w.Header().Set("Content-Type", "application/json")
 
 	h.debugLog.Println("Получение всех записей в заданном диапазоне...")
@@ -76,7 +82,7 @@ func (h handlers) getAll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	filter := Track{}
+	filter := models.Track{}
 
 	songFilterTxt := r.URL.Query().Get("song-filter")
 	if songFilterTxt != "" {
@@ -132,7 +138,7 @@ func (h handlers) getAll(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /track/lyrics/couplets [get]
 func (h handlers) getTrackLyrics(w http.ResponseWriter, r *http.Request) {
-	s := h.srvcConstructor(h.daoDB, h.daoEnrch, h.debugLog)
+	s := h.srvcConstructor(h.daoDB, h.daoEnrch, h.caching, h.debugLog)
 	w.Header().Set("Content-Type", "application/json")
 
 	h.debugLog.Println("Получение куплетов текста песни в заданном диапазоне...")
@@ -216,13 +222,13 @@ func (h handlers) getTrackLyrics(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /track [delete]
 func (h handlers) deleteTrack(w http.ResponseWriter, r *http.Request) {
-	s := h.srvcConstructor(h.daoDB, h.daoEnrch, h.debugLog)
+	s := h.srvcConstructor(h.daoDB, h.daoEnrch, h.caching, h.debugLog)
 	w.Header().Set("Content-Type", "application/json")
 
 	h.debugLog.Println("Удаление песни...")
 
 	// ----input----
-	var body TrackIdentifier
+	var body models.TrackIdentifier
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		h.debugLog.Println("Полученное тело не в JSON")
@@ -259,7 +265,7 @@ func (h handlers) deleteTrack(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /track [PATCH]
 func (h handlers) updateTrack(w http.ResponseWriter, r *http.Request) {
-	s := h.srvcConstructor(h.daoDB, h.daoEnrch, h.debugLog)
+	s := h.srvcConstructor(h.daoDB, h.daoEnrch, h.caching, h.debugLog)
 	w.Header().Set("Content-Type", "application/json")
 
 	h.debugLog.Println("Изменение информации о песне...")
@@ -281,7 +287,7 @@ func (h handlers) updateTrack(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var body Track
+	var body models.Track
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		h.debugLog.Println("Полученное тело не в JSON")
@@ -316,13 +322,13 @@ func (h handlers) updateTrack(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /track [post]
 func (h handlers) createTrack(w http.ResponseWriter, r *http.Request) {
-	s := h.srvcConstructor(h.daoDB, h.daoEnrch, h.debugLog)
+	s := h.srvcConstructor(h.daoDB, h.daoEnrch, h.caching, h.debugLog)
 	w.Header().Set("Content-Type", "application/json")
 
 	h.debugLog.Println("Добавление новой песни...")
 
 	// ----input----
-	var body TrackIdentifier
+	var body models.TrackIdentifier
 	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		h.debugLog.Println("Полученное тело не в JSON")
@@ -359,7 +365,7 @@ func (h handlers) createTrack(w http.ResponseWriter, r *http.Request) {
 // @Failure 500
 // @Router /info [get]
 func (h handlers) getInfo(w http.ResponseWriter, r *http.Request) {
-	s := h.srvcConstructor(h.daoDB, h.daoEnrch, h.debugLog)
+	s := h.srvcConstructor(h.daoDB, h.daoEnrch, h.caching, h.debugLog)
 	w.Header().Set("Content-Type", "application/json")
 
 	h.debugLog.Println("Получение информации о песне...")
@@ -384,7 +390,7 @@ func (h handlers) getInfo(w http.ResponseWriter, r *http.Request) {
 	h.debugLog.Println("song=", song, ", group=", group)
 
 	// ----processing----
-	filter := Track{Song: song, Group_name: group}
+	filter := models.Track{Song: song, Group_name: group}
 	res, code := s.ReadInfo(filter)
 
 	infoJSON, err := json.Marshal(res)
@@ -405,6 +411,6 @@ func (h handlers) getInfo(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func createHandlers(daoDB DaoDB[Track], daoEnrch EnrichmentChain[Track], srvcConstructor CreateMusicService, infoLog *log.Logger, debugLog *log.Logger) handlers {
-	return handlers{daoDB: daoDB, daoEnrch: daoEnrch, srvcConstructor: srvcConstructor, infoLog: infoLog, debugLog: debugLog}
+func CreateHandlers(daoDB db.DaoDB[models.Track], daoEnrch enrch.EnrichmentChain[models.Track], caching caching.DaoCaching, srvcConstructor CreateMusicService, infoLog *log.Logger, debugLog *log.Logger) handlers {
+	return handlers{daoDB: daoDB, daoEnrch: daoEnrch, srvcConstructor: srvcConstructor, infoLog: infoLog, debugLog: debugLog, caching: caching}
 }

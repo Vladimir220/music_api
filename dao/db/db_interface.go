@@ -1,4 +1,4 @@
-package main
+package db
 
 import (
 	"database/sql"
@@ -16,26 +16,9 @@ type DaoDB[T any] interface {
 
 // 1) all structure fields must be strings
 // 2) the names of the structure fields must be the same as the names of the columns of the DB schema
-func checkStructForDAO(obj interface{}, db *sql.DB) (err error) {
+func CheckStructForDAO(obj interface{}, db *sql.DB) (err error) {
 	v := reflect.ValueOf(obj)
-	if v.Kind() != reflect.Struct {
-		err = fmt.Errorf("ожидалась структура, а получено %s", v.Kind())
-		return
-	}
-
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-
-		if field.Kind() == reflect.Struct {
-			err = fmt.Errorf("поле %d - структура, но вложенные структуры недопустимы", i)
-			return
-		}
-
-		if field.Kind() != reflect.String {
-			err = fmt.Errorf("поле %d должно быть string, а получено %s", i, field.Kind())
-			return
-		}
-	}
+	err = CheckStructFormat(obj)
 
 	var rows *sql.Rows
 	rows, err = db.Query("SELECT * FROM tracks LIMIT 0")
@@ -60,5 +43,29 @@ func checkStructForDAO(obj interface{}, db *sql.DB) (err error) {
 		}
 	}
 
+	return
+}
+
+// all structure fields must be strings
+func CheckStructFormat(obj interface{}) (err error) {
+	v := reflect.ValueOf(obj)
+	if v.Kind() != reflect.Struct {
+		err = fmt.Errorf("ожидалась структура, а получено %s", v.Kind())
+		return
+	}
+
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+
+		if field.Kind() == reflect.Struct {
+			err = fmt.Errorf("поле %d - структура, но вложенные структуры недопустимы", i)
+			return
+		}
+
+		if field.Kind() != reflect.String {
+			err = fmt.Errorf("поле %d должно быть string, а получено %s", i, field.Kind())
+			return
+		}
+	}
 	return
 }

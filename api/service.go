@@ -1,20 +1,26 @@
-package main
+package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
+	"music_api/dao/caching"
+	"music_api/dao/db"
+	enrch "music_api/dao/enrichment"
+	"music_api/models"
 	"strings"
 	"time"
 )
 
-type service struct {
-	dao      DaoDB[Track]
-	enrch    EnrichmentChain[Track]
+type Service struct {
+	dao      db.DaoDB[models.Track]
+	enrch    enrch.EnrichmentChain[models.Track]
+	caching  caching.DaoCaching
 	debugLog *log.Logger
 }
 
-func (s service) CreateTrack(song, group string) (code int) {
-	track := Track{Song: song, Group_name: group}
+func (s Service) CreateTrack(song, group string) (code int) {
+	track := models.Track{Song: song, Group_name: group}
 	var success bool
 	track, success = s.enrch.Execute(track)
 	if !success {
@@ -36,7 +42,17 @@ func (s service) CreateTrack(song, group string) (code int) {
 	return
 }
 
-func (s service) ReadAll(filter Track, recordStart, recordEnd int) (recordsJSON []byte, code int) {
+func (s Service) ReadAll(filter models.Track, recordStart, recordEnd int) (recordsJSON []byte, code int) {
+	query := fmt.Sprintf("ReadAll:GroupName=%s:Song=%s:ReleaseDate=%s:Link=%s:Lyrics=%s:RecordStart=%d:RecordEnd=%d", filter.Group_name, filter.Song, filter.Release_date,
+		filter.Link, filter.Song_lyrics, recordStart, recordEnd)
+	cach, err := s.caching.Get(query)
+	if err == nil {
+		s.debugLog.Println("Кэш найден!")
+		return []byte(cach), 200
+	} else {
+		s.debugLog.Printf("Кэш не найден:%v\n", err)
+	}
+
 	res, err := s.dao.Read([]string{"*"}, &filter, recordStart, recordEnd)
 	if err != nil {
 		code = 500
@@ -75,12 +91,23 @@ func (s service) ReadAll(filter Track, recordStart, recordEnd int) (recordsJSON 
 		return
 	}
 
+	s.caching.Set(query, string(recordsJSON), 10*time.Minute)
+
 	code = 200
 	return
 }
 
-func (s service) ReadTrackLyrics(song, group string, coupletStart, coupletEnd int) (lyricsJSON []byte, code int) {
-	track := Track{Song: song, Group_name: group}
+func (s Service) ReadTrackLyrics(song, group string, coupletStart, coupletEnd int) (lyricsJSON []byte, code int) {
+	query := fmt.Sprintf("ReadTrackLyrics:GroupName=%s:Song=%s:CoupletStart=%d:CoupletEnd=%d", group, song, coupletStart, coupletEnd)
+	cach, err := s.caching.Get(query)
+	if err == nil {
+		s.debugLog.Println("Кэш найден!")
+		return []byte(cach), 200
+	} else {
+		s.debugLog.Printf("Кэш не найден:%v\n", err)
+	}
+
+	track := models.Track{Song: song, Group_name: group}
 	res, err := s.dao.Read([]string{"Song_lyrics"}, &track, 0, 1)
 	if err != nil {
 		code = 500
@@ -109,12 +136,13 @@ func (s service) ReadTrackLyrics(song, group string, coupletStart, coupletEnd in
 		return
 	}
 
+	s.caching.Set(query, string(lyricsJSON), 10*time.Minute)
 	code = 200
 	return
 }
 
-func (s service) DeleteTrack(song, group string) (code int) {
-	t := Track{Song: song, Group_name: group}
+func (s Service) DeleteTrack(song, group string) (code int) {
+	t := models.Track{Song: song, Group_name: group}
 	rowsAffected, err := s.dao.Delete(t)
 	if err != nil {
 		code = 500
@@ -130,8 +158,8 @@ func (s service) DeleteTrack(song, group string) (code int) {
 	return
 }
 
-func (s service) UpdateTrack(song, group string, newData Track) (code int) {
-	t := Track{Song: song, Group_name: group}
+func (s Service) UpdateTrack(song, group string, newData models.Track) (code int) {
+	t := models.Track{Song: song, Group_name: group}
 	rowsAffected, err := s.dao.Update(t, newData)
 	if err != nil {
 		code = 500
@@ -147,7 +175,26 @@ func (s service) UpdateTrack(song, group string, newData Track) (code int) {
 	return
 }
 
-func (s service) ReadInfo(filter Track) (info SongDetail, code int) {
+/*
+type SongDetail struct {
+	ReleaseDate string `json:"releaseDate" redis:"releaseDate"`
+	Text        string `json:"text" redis:"text"`
+	Link        string `json:"link" redis:"link"`
+}
+*/
+
+func (s Service) ReadInfo(filter models.Track) (info models.SongDetail, code int) {
+	query := fmt.Sprintf("ReadAll:GroupName=%s:Song=%s:ReleaseDate=%s:Link=%s:Lyrics=%s", filter.Group_name, filter.Song, filter.Release_date, filter.Link, filter.Song_lyrics)
+	cach, err := s.caching.HGet(query)
+	if err == nil {
+		s.debugLog.Println("Кэш найден!")
+		fmt.Println(cach)
+		cachObj := models.SongDetail{ReleaseDate: cach["releaseDate"], Text: cach["text"], Link: cach["link"]}
+		return cachObj, 200
+	} else {
+		s.debugLog.Printf("Кэш не найден:%v\n", err)
+	}
+
 	res, err := s.dao.Read([]string{"*"}, &filter, 0, 1)
 	if err != nil {
 		code = 500
@@ -161,7 +208,7 @@ func (s service) ReadInfo(filter Track) (info SongDetail, code int) {
 
 	t := res[0]
 
-	info = SongDetail{ReleaseDate: t.Release_date, Text: t.Song_lyrics, Link: t.Link}
+	info = models.SongDetail{ReleaseDate: t.Release_date, Text: t.Song_lyrics, Link: t.Link}
 	var date time.Time
 	date, err = time.Parse("2006-01-02T15:04:05Z", info.ReleaseDate)
 	if err != nil {
@@ -171,10 +218,12 @@ func (s service) ReadInfo(filter Track) (info SongDetail, code int) {
 	}
 	info.ReleaseDate = date.Format("2006-01-02")
 
+	s.caching.HSet(query, info)
+
 	code = 200
 	return
 }
 
-func createService(dao DaoDB[Track], enrch EnrichmentChain[Track], debugLog *log.Logger) MusicService {
-	return service{dao: dao, enrch: enrch, debugLog: debugLog}
+func CreateService(dao db.DaoDB[models.Track], enrch enrch.EnrichmentChain[models.Track], caching caching.DaoCaching, debugLog *log.Logger) MusicService {
+	return Service{dao: dao, enrch: enrch, debugLog: debugLog, caching: caching}
 }

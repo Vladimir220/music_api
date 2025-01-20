@@ -1,29 +1,32 @@
-package main
+package enrichment
 
 import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"music_api/models"
 	"net/http"
 	"net/url"
 	"os"
 )
 
-type daoLyricsCom struct {
+type daoLastFm struct {
 	url      string
-	nextStep EnrichmentChain[Track]
+	nextStep EnrichmentChain[models.Track]
 	Input    struct {
-		Body []struct {
-			SongLyrics string `json:"song-link"`
-		} `json:"result"`
+		Body struct {
+			Link string `json:"url"`
+			Wiki struct {
+				ReleaseDate string `json:"published"`
+			} `json:"wiki"`
+		} `json:"track"`
 	}
 }
 
-func (d *daoLyricsCom) GetEnrichment(t Track) (res Track, err error) {
-	token := os.Getenv("TOKEN_LYRICSCOM")
-	uid := os.Getenv("UID_LYRICSCOM")
-	if token == "" || uid == "" {
-		err = fmt.Errorf("в окружении нет токена или uid для API LyricsCom:")
+func (d *daoLastFm) GetEnrichment(t models.Track) (res models.Track, err error) {
+	token := os.Getenv("TOKEN_LASTFM")
+	if token == "" {
+		err = fmt.Errorf("в окружении нет токена для API LastFm")
 		return
 	}
 
@@ -31,10 +34,10 @@ func (d *daoLyricsCom) GetEnrichment(t Track) (res Track, err error) {
 
 	fullUrl, _ := url.Parse(d.url)
 	params := url.Values{}
-	params.Add("uid", uid)
-	params.Add("tokenid", token)
-	params.Add("term", t.Song)
+	params.Add("method", "track.getInfo")
+	params.Add("api_key", token)
 	params.Add("artist", t.Group_name)
+	params.Add("track", t.Song)
 	params.Add("format", "json")
 	fullUrl.RawQuery = params.Encode()
 
@@ -59,21 +62,24 @@ func (d *daoLyricsCom) GetEnrichment(t Track) (res Track, err error) {
 		return
 	}
 
-	if len(d.Input.Body) == 0 {
-		err = fmt.Errorf("текст песни не найден")
+	buf1 := d.Input.Body.Link
+	buf2 := d.Input.Body.Wiki.ReleaseDate
+	if buf1 == "" || buf2 == "" {
+		err = fmt.Errorf("информация о песне не найдена")
 		return
 	}
 
-	res.Song_lyrics = d.Input.Body[0].SongLyrics
+	res.Link = buf1
+	res.Release_date = buf2
 
 	return
 }
 
-func (e *daoLyricsCom) SetNext(next EnrichmentChain[Track]) {
+func (e *daoLastFm) SetNext(next EnrichmentChain[models.Track]) {
 	e.nextStep = next
 }
 
-func (e *daoLyricsCom) Execute(t Track) (res Track, success bool) {
+func (e *daoLastFm) Execute(t models.Track) (res models.Track, success bool) {
 	buf, err := e.GetEnrichment(t)
 	condContin := (err != nil || buf.Link == "" || buf.Release_date == "" || buf.Song_lyrics == "") && e.nextStep != nil
 	if condContin {
@@ -82,6 +88,6 @@ func (e *daoLyricsCom) Execute(t Track) (res Track, success bool) {
 	return buf, success
 }
 
-func createDaoLyricsCom() *daoLyricsCom {
-	return &daoLyricsCom{url: "https://www.stands4.com/services/v2/lyrics.php"}
+func CreateDaoLastFm() *daoLastFm {
+	return &daoLastFm{url: "https://ws.audioscrobbler.com/2.0"}
 }

@@ -1,4 +1,4 @@
-package main
+package enrichment
 
 type DaoEnrichment[T any] interface {
 	GetEnrichment(t T) (res T, err error)

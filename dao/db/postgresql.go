@@ -1,4 +1,4 @@
-package main
+package db
 
 import (
 	"database/sql"
@@ -313,7 +313,30 @@ func (dao *daoPostgreSQL[T]) Init() (err error) {
 		dbName   = os.Getenv("DB_NAME")
 	)
 
-	loginInfo := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, dbName)
+	loginInfo := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, "postgres")
+	db, err := sql.Open("postgres", loginInfo)
+	if err != nil {
+		err = fmt.Errorf("ошибка подключения к БД: %v", err)
+		return
+	}
+
+	query := "SELECT EXISTS (SELECT datname FROM pg_catalog.pg_database WHERE datname = $1)"
+	var isDbExist bool
+	err = db.QueryRow(query, dao.tableName).Scan(&isDbExist)
+	if err != nil {
+		err = fmt.Errorf("ошибка при проверке существования базы данных: %v", err)
+		return
+	}
+
+	if !isDbExist {
+		_, err = db.Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
+		if err != nil {
+			err = fmt.Errorf("ошибка при создании базы данных: %v", err)
+			return
+		}
+	}
+
+	loginInfo = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, dbName)
 	dao.db, err = sql.Open("postgres", loginInfo)
 	if err != nil {
 		err = fmt.Errorf("ошибка подключения к БД: %v", err)
@@ -331,7 +354,7 @@ func (dao *daoPostgreSQL[T]) Close() (err error) {
 	return
 }
 
-func createDaoPostgreSQL[T any]() (dao DaoDB[T], err error) {
+func CreateDaoPostgreSQL[T any]() (dao DaoDB[T], err error) {
 	daoPSQL := &daoPostgreSQL[T]{}
 	err = daoPSQL.Init()
 	if err != nil {
@@ -344,7 +367,7 @@ func createDaoPostgreSQL[T any]() (dao DaoDB[T], err error) {
 	}
 
 	var test T
-	err = checkStructForDAO(test, daoPSQL.db)
+	err = CheckStructForDAO(test, daoPSQL.db)
 	if err != nil {
 		return
 	}
