@@ -17,17 +17,26 @@ type DaoRedis struct {
 
 func (r *DaoRedis) Init() (err error) {
 	var (
-		host     = os.Getenv("REDIS_HOST")
-		port     = os.Getenv("REDIS_PORT")
-		password = os.Getenv("REDIS_PASSWORD")
+		host         = os.Getenv("REDIS_HOST")
+		port         = os.Getenv("REDIS_PORT")
+		password     = os.Getenv("REDIS_PASSWORD")
+		dockerMod    = os.Getenv("DOCKER_MOD")
+		redisDNSName = os.Getenv("REDIS_NAME")
+		addr         string
 	)
 	db, err := strconv.Atoi(os.Getenv("REDIS_DB"))
 	if err != nil {
 		return
 	}
 
+	if dockerMod != "1" {
+		addr = fmt.Sprintf("%s:%s", host, port)
+	} else {
+		addr = fmt.Sprintf("%s:%s", redisDNSName, port)
+	}
+
 	r.rdb = redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", host, port),
+		Addr:     addr,
 		Password: password,
 		DB:       db,
 	})
@@ -106,6 +115,23 @@ func (r *DaoRedis) HGet(key string) (res map[string]string, err error) {
 		}
 	}
 	return
+}
+
+func (r *DaoRedis) DelKeysWithPrefix(prefix string) (err error) {
+	ctx := context.Background()
+	keys, err := r.rdb.Keys(ctx, prefix+"*").Result()
+	if err != nil {
+		return err
+	}
+
+	if len(keys) > 0 {
+		_, err = r.rdb.Del(ctx, keys...).Result()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func CreateDaoRedis() (dao DaoCaching, err error) {

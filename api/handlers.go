@@ -34,7 +34,7 @@ type handlers struct {
 // @Param release-filter query string false "Strict filter by release"
 // @Param lyrics-filter query string false "Strict filter by lyrics"
 // @Param link-filter query string false "Strict filter by link"
-// @Success 200 {array} Track "Successfully retrieved Track"
+// @Success 200 {array} models.Track "Successfully retrieved Track"
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -132,7 +132,7 @@ func (h handlers) getAll(w http.ResponseWriter, r *http.Request) {
 // @Param group query string true "group"
 // @Param start query int true "Start index"
 // @Param end query int true "End index"
-// @Success 200 {object} Lyrics "Success"
+// @Success 200 {object} models.Lyrics "Success"
 // @Failure 400
 // @Failure 404
 // @Failure 500
@@ -216,7 +216,7 @@ func (h handlers) getTrackLyrics(w http.ResponseWriter, r *http.Request) {
 // @ID delete-track
 // @Accept  json
 // @Produce  json
-// @Param delTrack body TrackIdentifier true "Delete Track"
+// @Param delTrack body models.TrackIdentifier true "Delete Track"
 // @Success 201
 // @Failure 400
 // @Failure 500
@@ -259,7 +259,7 @@ func (h handlers) deleteTrack(w http.ResponseWriter, r *http.Request) {
 // @Produce  json
 // @Param song query string true "song"
 // @Param group query string true "group"
-// @Param newvalues body Track true "new values"
+// @Param newvalues body models.Track true "new values"
 // @Success 204
 // @Failure 400
 // @Failure 500
@@ -316,7 +316,7 @@ func (h handlers) updateTrack(w http.ResponseWriter, r *http.Request) {
 // @ID create-track
 // @Accept  json
 // @Produce  json
-// @Param newTrack body TrackIdentifier true "new values"
+// @Param newTrack body models.TrackIdentifier true "new values"
 // @Success 201
 // @Failure 400
 // @Failure 500
@@ -349,65 +349,6 @@ func (h handlers) createTrack(w http.ResponseWriter, r *http.Request) {
 	} else {
 		fmt.Fprint(w, "Success:", code)
 		h.infoLog.Println("Добавление песни", body.Song, "группы", body.Group_name)
-	}
-}
-
-// @Summary Get Info
-// @Description Get Info
-// @ID get-info
-// @Accept  json
-// @Produce  json
-// @Param song query string true "song"
-// @Param group query string true "group"
-// @Success 200 {object} SongDetail "Success"
-// @Failure 400
-// @Failure 404
-// @Failure 500
-// @Router /info [get]
-func (h handlers) getInfo(w http.ResponseWriter, r *http.Request) {
-	s := h.srvcConstructor(h.daoDB, h.daoEnrch, h.caching, h.debugLog)
-	w.Header().Set("Content-Type", "application/json")
-
-	h.debugLog.Println("Получение информации о песне...")
-
-	// ----input----
-	song := r.URL.Query().Get("song")
-	if song == "" {
-		h.debugLog.Println("Не указан параметр song")
-		w.WriteHeader(400)
-		fmt.Fprint(w, "Error 400")
-		return
-	}
-
-	group := r.URL.Query().Get("group")
-	if group == "" {
-		h.debugLog.Println("Не указан параметр group")
-		w.WriteHeader(400)
-		fmt.Fprint(w, "Error 400")
-		return
-	}
-
-	h.debugLog.Println("song=", song, ", group=", group)
-
-	// ----processing----
-	filter := models.Track{Song: song, Group_name: group}
-	res, code := s.ReadInfo(filter)
-
-	infoJSON, err := json.Marshal(res)
-	if err != nil {
-		h.debugLog.Println("Неудачный парсинг в JSON")
-		w.WriteHeader(500)
-		fmt.Fprint(w, "Error 500")
-		return
-	}
-
-	w.WriteHeader(code)
-
-	if code != 200 {
-		fmt.Fprint(w, "Error code:", code)
-	} else {
-		h.infoLog.Println("Получение инфирмации о песне", song, "группы", group)
-		w.Write(infoJSON)
 	}
 }
 

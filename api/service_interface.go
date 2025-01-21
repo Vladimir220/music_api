@@ -15,7 +15,6 @@ type MusicService interface {
 	ReadTrackLyrics(song, group string, coupletStart, coupletEnd int) (lyricsJSON []byte, code int)
 	DeleteTrack(song, group string) (code int)
 	UpdateTrack(song, group string, newData models.Track) (code int)
-	ReadInfo(filter models.Track) (info models.SongDetail, code int)
 }
 
 type CreateMusicService func(dao db.DaoDB[models.Track], enrch enrc.EnrichmentChain[models.Track], caching caching.DaoCaching, debugLog *log.Logger) MusicService

@@ -306,14 +306,22 @@ func (dao daoPostgreSQL[T]) CheckMigrations() (err error) {
 func (dao *daoPostgreSQL[T]) Init() (err error) {
 	dao.tableName = os.Getenv("DB_TABLE_NAME")
 	var (
-		host     = os.Getenv("DB_HOST")
-		port     = os.Getenv("DB_PORT")
-		user     = os.Getenv("DB_USER")
-		password = os.Getenv("DB_PASSWORD")
-		dbName   = os.Getenv("DB_NAME")
+		user      = os.Getenv("DB_USER")
+		password  = os.Getenv("DB_PASSWORD")
+		dbName    = os.Getenv("DB_NAME")
+		host      = os.Getenv("DB_HOST")
+		port      = os.Getenv("DB_PORT")
+		dbDNSName = os.Getenv("DB_NAME")
+		dockerMod = os.Getenv("DOCKER_MOD")
+		loginInfo string
 	)
 
-	loginInfo := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, "postgres")
+	if dockerMod != "1" {
+		loginInfo = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, "postgres")
+	} else {
+		loginInfo = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", user, password, dbDNSName, "postgres")
+	}
+
 	db, err := sql.Open("postgres", loginInfo)
 	if err != nil {
 		err = fmt.Errorf("ошибка подключения к БД: %v", err)
@@ -322,7 +330,7 @@ func (dao *daoPostgreSQL[T]) Init() (err error) {
 
 	query := "SELECT EXISTS (SELECT datname FROM pg_catalog.pg_database WHERE datname = $1)"
 	var isDbExist bool
-	err = db.QueryRow(query, dao.tableName).Scan(&isDbExist)
+	err = db.QueryRow(query, dbName).Scan(&isDbExist)
 	if err != nil {
 		err = fmt.Errorf("ошибка при проверке существования базы данных: %v", err)
 		return
@@ -336,7 +344,12 @@ func (dao *daoPostgreSQL[T]) Init() (err error) {
 		}
 	}
 
-	loginInfo = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, dbName)
+	if dockerMod != "1" {
+		loginInfo = fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, dbName)
+	} else {
+		loginInfo = fmt.Sprintf("postgres://%s:%s@%s/%s?sslmode=disable", user, password, dbDNSName, dbName)
+	}
+
 	dao.db, err = sql.Open("postgres", loginInfo)
 	if err != nil {
 		err = fmt.Errorf("ошибка подключения к БД: %v", err)

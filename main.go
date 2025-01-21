@@ -6,6 +6,7 @@
 package main
 
 import (
+	"log"
 	"music_api/api"
 	"music_api/dao/caching"
 	"music_api/dao/db"
@@ -15,8 +16,10 @@ import (
 
 func main() {
 	infoLog, debugLog := api.InitSystem()
+
 	daoDB, err := db.CreateDaoPostgreSQL[models.Track]()
 	if err != nil {
+		log.Println(err.Error())
 		debugLog.Fatal(err)
 	}
 	defer daoDB.Close()
@@ -24,13 +27,15 @@ func main() {
 	enrchDefault := enrch.CreateTrackEnricherDefault()
 	enrchLyricsCom := enrch.CreateDaoLyricsCom()
 	enrchLastFm := enrch.CreateDaoLastFm()
+	enrchServer := enrch.CreateDaoEnrchServer()
 
 	caching, _ := caching.CreateDaoRedis()
 
+	enrchServer.SetNext(enrchLastFm)
 	enrchLastFm.SetNext(enrchLyricsCom)
 	enrchLyricsCom.SetNext(enrchDefault)
 
-	h := api.CreateHandlers(daoDB, enrchLastFm, caching, api.CreateService, infoLog, debugLog)
+	h := api.CreateHandlers(daoDB, enrchServer, caching, api.CreateService, infoLog, debugLog)
 	r := api.CreateRouter(h, infoLog)
 
 	r.InitHandlers()

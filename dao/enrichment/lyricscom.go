@@ -45,6 +45,7 @@ func (d *daoLyricsCom) GetEnrichment(t models.Track) (res models.Track, err erro
 		err = fmt.Errorf("не удалось получить доступ к ресурсу обогащения: %v", err)
 		return
 	}
+	defer resp.Body.Close()
 
 	var body []byte
 	body, err = io.ReadAll(resp.Body)
@@ -52,7 +53,6 @@ func (d *daoLyricsCom) GetEnrichment(t models.Track) (res models.Track, err erro
 		err = fmt.Errorf("не удалось получить доступ к ресурсу обогащения: %v", err)
 		return
 	}
-	defer resp.Body.Close()
 
 	err = json.Unmarshal(body, &d.Input)
 	if err != nil {

@@ -15,7 +15,7 @@ type Router struct {
 
 func (r Router) InitHandlers() {
 	router := mux.NewRouter()
-	host := os.Getenv("NET_HOST")
+	host := os.Getenv("API_HOST")
 
 	router.HandleFunc("/all/pages", r.h.getAll).Methods(http.MethodGet)
 	r.infoLog.Printf("Зарегистрирован метод Get на маршрут %s/all/pages/\n", host)
@@ -31,9 +31,6 @@ func (r Router) InitHandlers() {
 
 	router.HandleFunc("/track", r.h.createTrack).Methods(http.MethodPost)
 	r.infoLog.Printf("Зарегистрирован метод Post на маршрут %s/track\n", host)
-
-	router.HandleFunc("/info", r.h.getInfo).Methods(http.MethodGet)
-	r.infoLog.Printf("Зарегистрирован метод Get на маршрут %s/info\n", host)
 
 	http.Handle("/", router)
 	http.ListenAndServe(host, nil)

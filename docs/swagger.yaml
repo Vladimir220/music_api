@@ -1,20 +1,11 @@
 basePath: /
 definitions:
-  main.Lyrics:
+  models.Lyrics:
     properties:
       Lyrics:
         type: string
     type: object
-  main.SongDetail:
-    properties:
-      link:
-        type: string
-      releaseDate:
-        type: string
-      text:
-        type: string
-    type: object
-  main.Track:
+  models.Track:
     properties:
       group_name:
         type: string
@@ -27,7 +18,7 @@ definitions:
       song_lyrics:
         type: string
     type: object
-  main.TrackIdentifier:
+  models.TrackIdentifier:
     properties:
       group_name:
         type: string
@@ -85,7 +76,7 @@ paths:
           description: Successfully retrieved Track
           schema:
             items:
-              $ref: '#/definitions/main.Track'
+              $ref: '#/definitions/models.Track'
             type: array
         "400":
           description: Bad Request
@@ -94,37 +85,6 @@ paths:
         "500":
           description: Internal Server Error
       summary: Get all Tracks
-  /info:
-    get:
-      consumes:
-      - application/json
-      description: Get Info
-      operationId: get-info
-      parameters:
-      - description: song
-        in: query
-        name: song
-        required: true
-        type: string
-      - description: group
-        in: query
-        name: group
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Success
-          schema:
-            $ref: '#/definitions/main.SongDetail'
-        "400":
-          description: Bad Request
-        "404":
-          description: Not Found
-        "500":
-          description: Internal Server Error
-      summary: Get Info
   /track:
     delete:
       consumes:
@@ -137,7 +97,7 @@ paths:
         name: delTrack
         required: true
         schema:
-          $ref: '#/definitions/main.TrackIdentifier'
+          $ref: '#/definitions/models.TrackIdentifier'
       produces:
       - application/json
       responses:
@@ -169,7 +129,7 @@ paths:
         name: newvalues
         required: true
         schema:
-          $ref: '#/definitions/main.Track'
+          $ref: '#/definitions/models.Track'
       produces:
       - application/json
       responses:
@@ -191,7 +151,7 @@ paths:
         name: newTrack
         required: true
         schema:
-          $ref: '#/definitions/main.TrackIdentifier'
+          $ref: '#/definitions/models.TrackIdentifier'
       produces:
       - application/json
       responses:
@@ -235,7 +195,7 @@ paths:
         "200":
           description: Success
           schema:
-            $ref: '#/definitions/main.Lyrics'
+            $ref: '#/definitions/models.Lyrics'
         "400":
           description: Bad Request
         "404":

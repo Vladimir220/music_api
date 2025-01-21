@@ -2,12 +2,10 @@ FROM golang
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
+RUN rm /etc/localtime
 
-RUN go mod download && go mod verify
-
-COPY . .
+RUN ln -s /usr/share/zoneinfo/Europe/Moscow /etc/localtime
 
 EXPOSE 1234
 
-CMD go run ${PWD}
+CMD go run .

@@ -7,4 +7,5 @@ type DaoCaching interface {
 	Set(key, value string, ttl time.Duration) (err error)
 	HSet(key string, data interface{}) (err error)
 	HGet(key string) (res map[string]string, err error)
+	DelKeysWithPrefix(prefix string) (err error)
 }
