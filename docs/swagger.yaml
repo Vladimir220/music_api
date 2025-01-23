@@ -20,7 +20,7 @@ definitions:
     type: object
   models.TrackIdentifier:
     properties:
-      group_name:
+      group:
         type: string
       song:
         type: string

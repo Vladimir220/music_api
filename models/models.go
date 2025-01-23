@@ -20,5 +20,19 @@ type SongDetail struct {
 
 type TrackIdentifier struct {
 	Song       string `json:"song"`
-	Group_name string `json:"group_name"`
+	Group_name string `json:"group"`
+}
+
+// Для дальнейшей работы с БД
+type GroupsQuery struct {
+	Id         string
+	Group_name string
+}
+
+type TracksQuery struct {
+	Group_id     string
+	Song         string
+	Release_date string
+	Song_lyrics  string
+	Link         string
 }

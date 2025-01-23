@@ -14,12 +14,12 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type daoPostgreSQL[T any] struct {
+type PostgreSQL[T any] struct {
 	db        *sql.DB
 	tableName string
 }
 
-func (dao daoPostgreSQL[T]) Create(values T) (rowsAffected int64, err error) {
+func (dao PostgreSQL[T]) Create(values T) (rowsAffected int64, err error) {
 	cols := make([]string, 0, 5)
 	vals := make([]string, 0, 5)
 	v := reflect.ValueOf(values)
@@ -63,7 +63,7 @@ func (dao daoPostgreSQL[T]) Create(values T) (rowsAffected int64, err error) {
 	return
 }
 
-func (dao daoPostgreSQL[T]) Read(columns []string, whereEquals *T, recordStart, recordEnd int) (res []T, err error) {
+func (dao PostgreSQL[T]) Read(columns []string, whereEquals *T, recordStart, recordEnd int) (res []T, err error) {
 	whereQuery := make([]string, 0, 5)
 	vals := make([]string, 0, 5)
 	if whereEquals != nil {
@@ -160,7 +160,7 @@ func (dao daoPostgreSQL[T]) Read(columns []string, whereEquals *T, recordStart, 
 	return
 }
 
-func (dao daoPostgreSQL[T]) Update(whereEquals T, newValues T) (rowsAffected int64, err error) {
+func (dao PostgreSQL[T]) Update(whereEquals T, newValues T) (rowsAffected int64, err error) {
 	j := 1
 	set := make([]string, 0, 5)
 	setVals := make([]string, 0, 5)
@@ -231,7 +231,7 @@ func (dao daoPostgreSQL[T]) Update(whereEquals T, newValues T) (rowsAffected int
 	return
 }
 
-func (dao daoPostgreSQL[T]) Delete(whereEquals T) (rowsAffected int64, err error) {
+func (dao PostgreSQL[T]) Delete(whereEquals T) (rowsAffected int64, err error) {
 	j := 1
 	where := make([]string, 0, 5)
 	vals := make([]string, 0, 5)
@@ -277,7 +277,7 @@ func (dao daoPostgreSQL[T]) Delete(whereEquals T) (rowsAffected int64, err error
 	return
 }
 
-func (dao daoPostgreSQL[T]) CheckMigrations() (err error) {
+func (dao PostgreSQL[T]) CheckMigrations() (err error) {
 	var driver database.Driver
 	driver, err = postgres.WithInstance(dao.db, &postgres.Config{})
 	if err != nil {
@@ -303,8 +303,8 @@ func (dao daoPostgreSQL[T]) CheckMigrations() (err error) {
 	return
 }
 
-func (dao *daoPostgreSQL[T]) Init() (err error) {
-	dao.tableName = os.Getenv("DB_TABLE_NAME")
+func (dao *PostgreSQL[T]) Init(tableName string) (err error) {
+	dao.tableName = tableName
 	var (
 		user      = os.Getenv("DB_USER")
 		password  = os.Getenv("DB_PASSWORD")
@@ -359,7 +359,7 @@ func (dao *daoPostgreSQL[T]) Init() (err error) {
 	return
 }
 
-func (dao *daoPostgreSQL[T]) Close() (err error) {
+func (dao *PostgreSQL[T]) Close() (err error) {
 	err = dao.db.Close()
 	if err != nil {
 		err = fmt.Errorf("ошибка закрытия БД: %v", err)
@@ -367,23 +367,25 @@ func (dao *daoPostgreSQL[T]) Close() (err error) {
 	return
 }
 
-func CreateDaoPostgreSQL[T any]() (dao DaoDB[T], err error) {
-	daoPSQL := &daoPostgreSQL[T]{}
-	err = daoPSQL.Init()
+func CreatePostgreSQL[T any](tableName string, checkMigrations bool) (dao DaoDB[T], err error) {
+	psql := &PostgreSQL[T]{}
+	err = psql.Init(tableName)
 	if err != nil {
 		return
 	}
 
-	err = daoPSQL.CheckMigrations()
-	if err != nil {
-		return
+	if checkMigrations {
+		err = psql.CheckMigrations()
+		if err != nil {
+			return
+		}
 	}
 
 	var test T
-	err = CheckStructForDAO(test, daoPSQL.db)
+	err = CheckStructForDB(test, psql.db, tableName)
 	if err != nil {
 		return
 	}
 
-	return daoPSQL, err
+	return psql, err
 }

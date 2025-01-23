@@ -16,12 +16,12 @@ type DaoDB[T any] interface {
 
 // 1) all structure fields must be strings
 // 2) the names of the structure fields must be the same as the names of the columns of the DB schema
-func CheckStructForDAO(obj interface{}, db *sql.DB) (err error) {
+func CheckStructForDB(obj interface{}, db *sql.DB, tableName string) (err error) {
 	v := reflect.ValueOf(obj)
 	err = CheckStructFormat(obj)
 
 	var rows *sql.Rows
-	rows, err = db.Query("SELECT * FROM tracks LIMIT 0")
+	rows, err = db.Query(fmt.Sprintf("SELECT * FROM %s LIMIT 0", tableName))
 	if err != nil {
 		err = fmt.Errorf("ошибка чтения схемы таблицы: %v", err)
 		return
@@ -38,7 +38,7 @@ func CheckStructForDAO(obj interface{}, db *sql.DB) (err error) {
 	for _, c := range colNames {
 		field := v.FieldByName(c)
 		if !field.IsValid() {
-			err = fmt.Errorf("несоответствие схемы БД и указанной структуры: отсутствует поле %s", c)
+			err = fmt.Errorf("несоответствие таблицы БД и указанной структуры: отсутствует поле %s", c)
 			return
 		}
 	}

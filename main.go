@@ -11,13 +11,12 @@ import (
 	"music_api/dao/caching"
 	"music_api/dao/db"
 	enrch "music_api/dao/enrichment"
-	"music_api/models"
 )
 
 func main() {
 	infoLog, debugLog := api.InitSystem()
 
-	daoDB, err := db.CreateDaoPostgreSQL[models.Track]()
+	daoDB, err := db.CreateDaoPostgresMusicApi()
 	if err != nil {
 		log.Println(err.Error())
 		debugLog.Fatal(err)
